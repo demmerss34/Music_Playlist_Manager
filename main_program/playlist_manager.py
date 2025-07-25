@@ -1,22 +1,42 @@
 """Music Playlist Manager (Sprint 1)"""
 
 import sys
+import os
+import json
 from datetime import datetime
 from typing import Dict, List
+from dataset_service.song_service import find_song_data
+from recommendation_client import send_request
+
+APP_DATA_FILE = "app_data.json"
 
 # ------------------------------------------------------------------------------
-# Initialize Lists And Dicts For Password/Playlist Storage
+# Persistent Storage In JSON
 # ------------------------------------------------------------------------------
-# Placeholder for username and password storage
+def load_liked_songs() -> List[Dict[str, str]]:
+    """Load liked songs from file, or return empty list if file missing."""
+    if os.path.exists(APP_DATA_FILE):
+        with open(APP_DATA_FILE, "r") as f:
+            return json.load(f)
+    return []
+
+def save_liked_songs(data):
+    """Save liked songs to file for persistence."""
+    with open(APP_DATA_FILE, "w") as f:
+        json.dump(data, f, indent=2)
+
+# Load from disk initially
+liked_songs: List[Dict[str, str]] = load_liked_songs()
+
+# ------------------------------------------------------------------------------
+# User Account and Genre Setup
+# ------------------------------------------------------------------------------
 users = {}
-# List of dicts: {title, artist, genre, year, album, date_added, duration}
-liked_songs: List[Dict[str, str]] = []
 # Starter Genres
 genres = ["Rock", "Pop", "Jazz", "Hip-Hop", "Classical"]
 
-
 # ------------------------------------------------------------------------------
-# Utility Helpers For Future Testing
+# Input Helper
 # ------------------------------------------------------------------------------
 
 def _safe_input(prompt: str) -> str:
@@ -25,7 +45,113 @@ def _safe_input(prompt: str) -> str:
 
 
 # ------------------------------------------------------------------------------
-# Screens Currently Implemented For The Music Playlist CLI
+# Recommendation Features/Screen For Sending To Microservice A
+# ------------------------------------------------------------------------------
+def get_recommendations_by_artist(artist: str):
+    """Request recommendations for songs by same artist (not already liked)."""
+    titles_in_playlist = {song["title"] for song in liked_songs}
+    payload = {
+        "type": "recommend_by_artist",
+        "auth_key": os.getenv("AUTH_KEY"),
+        "artist": artist,
+        "exclude_titles": list(titles_in_playlist)
+    }
+    response = send_request(payload)
+    return response.get("result", [])
+
+def get_recommendations_by_genre(genre: str):
+    """Request recommendations in same genre (not already liked)."""
+    titles_in_playlist = {song["title"] for song in liked_songs}
+    payload = {
+        "type": "recommend_by_genre",
+        "auth_key": os.getenv("AUTH_KEY"),
+        "genre": genre,
+        "exclude_titles": list(titles_in_playlist)
+    }
+    response = send_request(payload)
+    return response.get("result", [])
+
+def get_popular_recommendations():
+    """Request 3 overall popular songs (not already liked)."""
+    titles_in_playlist = {song["title"] for song in liked_songs}
+    payload = {
+        "type": "recommend_popular",
+        "auth_key": os.getenv("AUTH_KEY"),
+        "exclude_titles": list(titles_in_playlist)
+    }
+    response = send_request(payload)
+    return response.get("result", [])
+
+def recommendation_screen():
+    """
+    Main screen to show all 3 recommendation types for sending to the
+    microservice and allows user to add any of the received songs.
+    """
+    print("\n=== Song Recommendations ===")
+    print("[1] Recommend More Songs by Same Artist")
+    print("[2] Recommend Songs in Same Genre")
+    print("[3] Recommend Popular Songs")
+    print("[B] Back")
+
+    choice = _safe_input("Select an option: ").strip().upper()
+    if choice == "B":
+        return
+    elif choice in {"1", "2"}:
+        song_title = _safe_input("Pick a song from your playlist to "
+                                 "base it on: ").strip()
+        match = next(
+            (
+                s for s in liked_songs
+                if s["title"].lower() == song_title.lower()
+            ),
+            None
+        )
+        if not match:
+            print("Song not found in your playlist.\n")
+            return
+        if choice == "1":
+            recs = get_recommendations_by_artist(match["artist"])
+        else:
+            recs = get_recommendations_by_genre(match["genre"])
+    elif choice == "3":
+        recs = get_popular_recommendations()
+    else:
+        print("Invalid input.\n")
+        return
+
+    if not recs:
+        print("No recommendations found.")
+        return
+
+    print("\nRecommended Songs:")
+    for i, song in enumerate(recs, 1):
+        print(f"{i}. {song['title']} - {song['artist']} ({song['genre']})")
+
+    add_choice = _safe_input("Add one to liked? Enter number "
+                             "or [N] to skip: ").strip().upper()
+    if add_choice == "N":
+        return
+    if add_choice.isdigit():
+        idx = int(add_choice) - 1
+        if 0 <= idx < len(recs):
+            liked_songs.append({
+                "title": recs[idx]["title"],
+                "artist": recs[idx]["artist"],
+                "genre": recs[idx]["genre"],
+                "year": recs[idx].get("year", "Unknown"),
+                "date_added": datetime.now().strftime("%Y-%m-%d"),
+                "duration": recs[idx].get("duration", "Unknown"),
+            })
+            save_liked_songs(liked_songs)
+            print("Song added to your playlist.\n")
+        else:
+            print("Invalid selection.\n")
+    else:
+        print("Invalid input.\n")
+
+
+# ------------------------------------------------------------------------------
+# Screens Implemented For The Music Playlist CLI
 # ------------------------------------------------------------------------------
 
 def welcome_screen():
@@ -34,6 +160,9 @@ def welcome_screen():
     an account.
     """
     print("=== Welcome to CLI Music Playlist Manager ===")
+    print(
+        "Organize your favorite music, create playlists by genre, and save your"
+        " preferences securely.\n")
     while True:
         if users:
             print("[1] Login")
@@ -123,7 +252,8 @@ def home_screen(username):
         print("[2] View Playlist by Genre")
         print("[3] Lookup Song")
         print("[4] Delete a Song")
-        print("[5] Logout")
+        print("[5] Get Song Recommendations")
+        print("[6] Logout")
         print("[Q] Quit Program\n")
 
         choice = _safe_input("Select an option: ").strip().upper()
@@ -136,8 +266,10 @@ def home_screen(username):
         elif choice == "4":
             delete_song_screen()
         elif choice == "5":
+            recommendation_screen()
+        elif choice == "6":
             if confirm_logout_screen():
-                return  # Go back to log in
+                return
         elif choice == "Q":
             if confirm_quit_screen():
                 sys.exit("Goodbye!")
@@ -165,57 +297,35 @@ def add_song_screen():
             print("Artist cannot be empty.\n")
             continue
 
-        # Genre selection loop
-        while True:
-            print("\nAvailable genres:")
-            for i, g in enumerate(genres, 1):
-                print(f"{i}. {g}")
-            print("[N] Add a new genre")
-            genre_choice = _safe_input("Select genre number, or [N] for new "
-                                       "genre, or [B] Back: ").strip()
-
-            if genre_choice.upper() == "B":
-                print("Cancelled add song.\n")
-                return
-            elif genre_choice.upper() == "N":
-                # Add a new genre manually
-                new_genre = _safe_input(
-                    "Enter new genre name (or [B] Back): ").strip()
-                if new_genre.upper() == "B":
-                    continue  # Go back to genre selection
-                if not new_genre:
-                    print("Genre name cannot be empty.\n")
-                    continue
-                if new_genre in genres:
-                    print(f"Genre '{new_genre}' already exists.\n")
-                    continue
-                genres.append(new_genre)
-                genre = new_genre
-                break
-            elif genre_choice.isdigit():
-                idx = int(genre_choice) - 1
-                if 0 <= idx < len(genres):
-                    genre = genres[idx]
-                    break
-                else:
-                    print("Invalid genre selection.\n")
-            else:
-                print("Invalid input. Please enter a number, [N], or [B].\n")
-
         # Go to confirm add song screen if inputs are valid
-        confirm_add_song_screen(title, artist, genre)
+        confirm_add_song_screen(title, artist)
         return  # after confirmation (add or cancel) return to Home
 
 
-def confirm_add_song_screen(title, artist, genre):
-    """Confirmation screen before adding a song to 'liked'."""
+def confirm_add_song_screen(title, artist):
+    """
+    Confirmation screen before adding a song to genre playlist. Pulls data from
+    our dataset to fill in genre, release year, and duration in milliseconds.
+    """
+    song_data = find_song_data(title, artist)
+
+    year = song_data["year"] if song_data and song_data.get(
+        "year") else "Unknown"
+    duration = song_data["duration"] if song_data and song_data.get(
+        "duration") else "Unknown"
+    genre = song_data["genre"] if song_data and song_data.get(
+        "genre") else "Unknown"
+
     while True:
         print("\nYou entered:")
         print(f"Title:  {title}")
         print(f"Artist: {artist}")
         print(f"Genre:  {genre}")
+        print(f"Year:     {year}")
+        print(f"Duration: {duration}")
+
         print("\nIf you confirm, this song will be added to your Liked Songs "
-              f"and appear in the '{genre}' playlist. If the genre is wrong, "
+              f"and appear in the '{genre}' playlist. If any info is wrong, "
               "choose [R] to reenter info.")
         choice = _safe_input("Add this song? ([Y] = Yes, [N] = No, "
                              "[R] = Reenter info): ").strip().upper()
@@ -224,11 +334,11 @@ def confirm_add_song_screen(title, artist, genre):
                 "title": title,
                 "artist": artist,
                 "genre": genre,
-                "year": "Unknown",
-                "album": "Unknown",
+                "year": year,
                 "date_added": datetime.now().strftime("%Y-%m-%d"),
-                "duration": "Unknown",
+                "duration": duration,
             })
+            save_liked_songs(liked_songs)
             print(f"'{title}' added to your liked songs.\n")
             return
         elif choice == "N":
@@ -408,6 +518,7 @@ def confirm_delete_song_screen(song_index: int):
             "Delete this song? ([Y] = Yes, [N] = No): ").strip().upper()
         if choice == "Y":
             removed = liked_songs.pop(song_index)
+            save_liked_songs(liked_songs)
             print(
                 f"'{removed['title']}' was deleted from your music "
                 f"collection.\n")

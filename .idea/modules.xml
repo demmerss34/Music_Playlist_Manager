@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/CS361 Music Playlist Manager Main Program.iml" filepath="$PROJECT_DIR$/.idea/CS361 Music Playlist Manager Main Program.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/CS361_Music_Playlist_Manager.iml" filepath="$PROJECT_DIR$/.idea/CS361_Music_Playlist_Manager.iml" />
     </modules>
   </component>
 </project>

@@ -1,0 +1,6 @@
+.env
+__pycache__/
+*.pyc
+.idea/
+liked_songs.json
+test_playlist_manager.py

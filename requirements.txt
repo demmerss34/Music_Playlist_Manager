@@ -1,0 +1,4 @@
+pandas
+pyzmq
+python-dotenv
+
