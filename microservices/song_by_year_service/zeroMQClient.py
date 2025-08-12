@@ -4,8 +4,8 @@ ADDRESS = "tcp://127.0.0.1:5557"
 
 def send_year_request(year: int, timeout_ms: int = 5000) -> dict:
     """
-    Ask the song-by-year microservice for a random song from the given year.
-    Raises TimeoutError if the service doesn't respond in time.
+    Ask the song-by-year microservice for a random song from the given
+    year. Raises TimeoutError if the service doesn't respond in time.
     """
     if not isinstance(year, int):
         raise ValueError("year must be an integer")

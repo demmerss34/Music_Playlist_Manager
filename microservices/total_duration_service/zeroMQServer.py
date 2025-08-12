@@ -1,6 +1,7 @@
 """
 ZeroMQ Server — Total Playlist Duration (Microservice D)
-Listens on tcp://*:5558 and returns the total duration for a user's liked songs.
+Listens on tcp://*:5558 and returns the total duration for
+a user's liked songs.
 """
 
 import json
@@ -146,7 +147,8 @@ def main():
     context = zmq.Context()
     socket = context.socket(zmq.REP)
     socket.bind(f"tcp://*:{PORT}")
-    print(f"Total Duration Server listening on port {PORT}... (Ctrl+C to stop)")
+    print(f"Total Duration Server listening on "
+          f"port {PORT}... (Ctrl+C to stop)")
 
     try:
         while True:

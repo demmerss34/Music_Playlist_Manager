@@ -4,7 +4,10 @@ import os
 
 
 def createConnection():
-    ''' Create a database if not already created, restore from backup if needed '''
+    """
+    Create a database if not already created, restore from backup
+    if needed
+    """
     db_file = 'songsData.db'
     backup_file = 'songsData_dump.sql'
     

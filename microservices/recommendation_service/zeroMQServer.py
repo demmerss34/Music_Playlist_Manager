@@ -24,12 +24,16 @@ def main():
                 if request_type == "recommend_by_artist":
                     artist = received_data.get("artist", "")
                     print(f"Artist of interest: {artist}")
-                    recommendations = songRecommenderKNN.get_more_songs_by_artist(
-                        artist)
+                    recommendations = (
+                        songRecommenderKNN.get_more_songs_by_artist(artist)
+                    )
+
 
                 elif request_type == "recommend_popular":
                     print("Recommending top popular songs...")
-                    recommendations = songRecommenderKNN.get_top_popular_songs()
+                    recommendations = (
+                        songRecommenderKNN.get_top_popular_songs()
+                    )
 
                 elif request_type == "recommend_by_genre":
                     genre = received_data.get("genre", "")

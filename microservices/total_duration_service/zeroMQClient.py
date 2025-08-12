@@ -13,7 +13,7 @@ def send_duration_request(username: str) -> dict:
     socket.connect("tcp://127.0.0.1:5558")
 
     payload = {
-        "type": "get_total_duration",  # Ensure this matches the expected type
+        "type": "get_total_duration",
         "username": username
     }
 

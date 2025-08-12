@@ -89,7 +89,8 @@ def main():
                     sock.send_json({"songs": [song]})
 
             except Exception as e:
-                # If anything slips through, return an error rather than crash
+                # If anything slips through, return an error rather
+                # than crash
                 sock.send_json({"error": str(e)})
 
     except KeyboardInterrupt:

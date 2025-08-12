@@ -20,7 +20,9 @@ def get_more_songs_by_artist(artist_name, max_results=5):
     Return up to `max_results` songs by the same artist.
     Only matches exact artist names (case-insensitive).
     """
-    matches = df_features[df_features['artist_name'].str.lower() == artist_name.lower()]
+    matches = df_features[
+        df_features['artist_name'].str.lower() == artist_name.lower()
+    ]
 
     if matches.empty:
         print(f"No songs found for artist '{artist_name}'")
@@ -44,7 +46,9 @@ def get_top_popular_songs(n=5):
     """
     Return the top N most popular songs.
     """
-    top_songs = df_features.sort_values(by="popularity", ascending=False).head(n)
+    top_songs = df_features.sort_values(
+        by="popularity", ascending=False
+    ).head(n)
 
     recommendations = {"recommendations": []}
     for _, row in top_songs.iterrows():

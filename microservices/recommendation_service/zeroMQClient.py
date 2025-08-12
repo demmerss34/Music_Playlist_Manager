@@ -13,7 +13,8 @@ def send_request(payload, timeout=5000):  # timeout in milliseconds
         response = socket.recv_json()
         return response
     except zmq.error.Again:
-        raise TimeoutError(f"No response from microservice within {timeout} ms")
+        raise TimeoutError(f"No response from microservice "
+                           f"within {timeout} ms")
 
 
 

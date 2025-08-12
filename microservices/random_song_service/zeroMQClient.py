@@ -3,7 +3,8 @@ import zmq
 
 def request_random_song() -> dict:
     """
-    Sends a request to the random song microservice and returns one random song.
+    Sends a request to the random song microservice and returns one
+    random song.
     """
     context = zmq.Context()
     socket = context.socket(zmq.REQ)
