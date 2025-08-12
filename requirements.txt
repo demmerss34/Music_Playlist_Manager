@@ -1,4 +1,4 @@
 pandas
 pyzmq
-python-dotenv
+pytest
 

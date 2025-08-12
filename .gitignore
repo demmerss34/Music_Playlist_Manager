@@ -1,6 +1,36 @@
-.env
+# Python bytecode and caches
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+
+# PyCharm and virtual environments
 .idea/
-liked_songs.json
-test_playlist_manager.py
+.venv/
+venv/
+
+# Environment variables / secrets
+.env
+*.env
+
+# User-specific runtime data
+liked_songs/
+users.json
+
+# Microservice-specific ignores
+microservices/random_song_service/spotify_data.csv
+microservices/song_by_year_service/spotify_data.csv
+microservices/recommendation_service/*.csv
+microservices/recommendation_service/*.sql
+microservices/recommendation_service/*.joblib
+microservices/recommendation_service/songsData.db
+
+# Large datasets
+data/spotify_data.csv
+
+# Logs and temporary files
+*.log
+*.tmp
+*.bak
+.DS_Store
+
